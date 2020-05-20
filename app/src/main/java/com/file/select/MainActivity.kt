@@ -11,6 +11,7 @@ import jxl.WorkbookSettings
 import jxl.read.biff.BiffException
 import kotlinx.android.synthetic.main.activity_main.*
 import org.apache.poi.hssf.usermodel.HSSFDateUtil
+import org.apache.poi.hssf.usermodel.HSSFWorkbook
 import org.apache.poi.ss.usermodel.Cell
 import org.apache.poi.ss.usermodel.CellValue
 import org.apache.poi.ss.usermodel.FormulaEvaluator
@@ -75,14 +76,29 @@ class MainActivity : AppCompatActivity() {
 
     private fun readExcelFileWithApachePOI(path: String) {
 
+        var workBook: org.apache.poi.ss.usermodel.Workbook? = null
+
+
         try {
             val excelFile = FileInputStream(File(path))
-            val workBook = XSSFWorkbook(excelFile)
+            workBook = when {
+                path.endsWith(".xls") -> {
+                    HSSFWorkbook(excelFile)
+                }
+                path.endsWith(".xlsx") -> {
+                    XSSFWorkbook(excelFile)
+                }
+                else -> {
+                    Toast.makeText(this, "Unsupported file type", Toast.LENGTH_SHORT).show()
+                    return
+                }
+            }
+
             val sheet = workBook.getSheetAt(0)
-            val rowCount = sheet.physicalNumberOfRows
+            val rowCount = sheet?.physicalNumberOfRows
             val formulaEvaluator = workBook.creationHelper.createFormulaEvaluator()
 
-            for (rowPos in 1 until rowCount) {
+            for (rowPos in 1 until rowCount!!) {
                 val row = sheet.getRow(rowPos)
                 val cellCount = row.physicalNumberOfCells
 
@@ -121,7 +137,7 @@ class MainActivity : AppCompatActivity() {
                         val formatter = SimpleDateFormat("MM/dd/yy")
                         formatter.format(HSSFDateUtil.getJavaDate(date))
                     } else {
-                        "0" + numericValue
+                        "0$numericValue"
                     }
                 }
                 Cell.CELL_TYPE_STRING -> value = "" + cellValue.stringValue
